@@ -1,0 +1,502 @@
+{
+  "name": "customer-contact",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "customer-contact",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        176
+      ],
+      "id": "41542923-a6e8-4fff-8ea1-9552799d43b0",
+      "name": "Webhook",
+      "webhookId": "82aa2cdf-55c9-4ae5-9173-40a84365d5d0"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook-test/customer-contact",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"customer\": {\n    \"name\": \"Max Mustermann\",\n    \"email\": \"max@example.com\"\n  },\n  \"subject\": \"Lieferung verspätet\",\n  \"message\": \"Meine Bestellung ist noch nicht angekommen. Ich warte seit 10 Tagen und möchte heute noch einen Rückruf.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        352
+      ],
+      "id": "28ef181b-f8ee-4120-a70c-639884b3bdd5",
+      "name": "Test Webhook"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const body = $json.body;\n\nconst normalized = {\n  source_channel: 'webhook',\n  customer_name: body.customer?.name ?? '',\n  customer_email: body.customer?.email ?? '',\n  customer_phone: body.customer?.phone ?? '',\n  subject: body.subject ?? '',\n  raw_text: body.message ?? '',\n};\n\nreturn {\n  json: normalized\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        176
+      ],
+      "id": "c6e5385a-3f9f-43a6-a1bd-fcc5120a99e7",
+      "name": "Normalize"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You analyze incoming messages.\n\nInput:\nSubject: {{$json.subject}}\nText: {{$json.raw_text}}\n\nReturn ONLY valid JSON. No markdown, no explanation.\nJSON schema:\n{\n  \"summary\": \"2 to 3 sentence summary\",\n  \"sentiment\": \"good|neutral|bad\",\n  \"open_todo\": \"boolean wether there is an open todo\"\n}\n\nRules:\n- Be concise and factual.\n- Do not invent details.\n- sentiment must be exactly one of: good, neutral, bad.\n- open_todo must be a boolean.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        416,
+        256
+      ],
+      "id": "e80a1f6a-02c1-49c3-ab0e-6e2243a4f3f4",
+      "name": "Basic LLM Chain",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "model": "llama3.2:3b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        416,
+        432
+      ],
+      "id": "d3f4091a-ca4d-42c6-9a8f-a01bae7b7704",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "RDx31laOmPgXX8Lj",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const parsed = JSON.parse($json.text);\nreturn { json: parsed };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        256
+      ],
+      "id": "b3bcf155-c6a3-416d-a797-b7fd464a38b2",
+      "name": "Parse JSON"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "customer_contacts",
+        "columns": {
+          "column": [
+            {
+              "name": "source_channel"
+            },
+            {
+              "name": "customer_name"
+            },
+            {
+              "name": "customer_email"
+            },
+            {
+              "name": "customer_phone"
+            },
+            {
+              "name": "subject"
+            },
+            {
+              "name": "raw_text"
+            },
+            {
+              "name": "summary"
+            },
+            {
+              "name": "sentiment"
+            },
+            {
+              "name": "open_todo",
+              "type": "boolean"
+            },
+            {
+              "name": "is_critical",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        160,
+        -80
+      ],
+      "id": "403109a1-5244-4204-a369-94a324a8fc82",
+      "name": "Create a data table"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -80
+      ],
+      "id": "202ddc52-ac23-4871-9a94-e24485774671",
+      "name": "Manual Trigger"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1136,
+        192
+      ],
+      "id": "de7db4d4-117a-4084-8e78-c5390f0a2677",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "UwCMBQCJ7ITsq1lU",
+          "mode": "list",
+          "cachedResultName": "customer_contacts",
+          "cachedResultUrl": "/projects/0vRqFIjdxBUoXSgT/datatables/UwCMBQCJ7ITsq1lU"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {
+            "open_todo": false
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "source_channel",
+              "displayName": "source_channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "customer_name",
+              "displayName": "customer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "customer_email",
+              "displayName": "customer_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "customer_phone",
+              "displayName": "customer_phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "subject",
+              "displayName": "subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "raw_text",
+              "displayName": "raw_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "sentiment",
+              "displayName": "sentiment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "open_todo",
+              "displayName": "open_todo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1344,
+        192
+      ],
+      "id": "8febf88f-85a0-466e-9bc1-8d998665ae44",
+      "name": "Insert row"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if($input.item.json.sentiment == \"bad\" && $input.item.json.open_todo) {\n  $input.item.json.is_critical = true;\n} else {\n  $input.item.json.is_critical = false;\n}\n\nreturn $input.item;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        256
+      ],
+      "id": "ebac3e00-b2e0-45d3-b1d9-60de4edc5fcb",
+      "name": "Check if critical"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "53f2e4e2-e7b8-4468-bcb8-41b2d57f1a8f",
+              "leftValue": "={{ $json.is_critical }}",
+              "rightValue": "bad",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1552,
+        192
+      ],
+      "id": "c4e7e7b8-43b9-416e-a4c8-5c4edf8432c4",
+      "name": "If critical"
+    },
+    {
+      "parameters": {
+        "subject": "Kritischer Fall erkannt",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1808,
+        176
+      ],
+      "id": "0f205228-8d1a-435e-8d71-0c7537165abc",
+      "name": "Emergency Notification",
+      "webhookId": "416d9b91-d3f2-4426-989f-53d5c6ef3ec8"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON": {
+      "main": [
+        [
+          {
+            "node": "Check if critical",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Create a data table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert row": {
+      "main": [
+        [
+          {
+            "node": "If critical",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if critical": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Create a data table": {
+      "main": [
+        []
+      ]
+    },
+    "If critical": {
+      "main": [
+        [
+          {
+            "node": "Emergency Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "9dd0cf5e-b925-4540-a3fc-6ac35e6fba31",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b0b3c0461964838e0d3fd08e97cc797827cdf6496952885d8860b1289ab8b4f1"
+  },
+  "id": "MqcpbGmgFxBu759d",
+  "tags": []
+}
