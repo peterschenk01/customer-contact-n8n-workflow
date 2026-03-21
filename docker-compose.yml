@@ -1,6 +1,7 @@
 volumes:
   db_storage:
   n8n_storage:
+  ollama_storage:
 
 services:
   postgres:
@@ -52,3 +53,13 @@ services:
       - N8N_RUNNERS_TASK_BROKER_URI=http://n8n:5679
     depends_on:
       - n8n
+    
+  ollama:
+    profiles: ["full"]
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_storage:/root/.ollama
+    restart: always
