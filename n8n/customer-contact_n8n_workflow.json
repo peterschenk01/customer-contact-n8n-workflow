@@ -4,7 +4,7 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "customer-contact",
+        "path": "customer-contact/message",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
@@ -20,7 +20,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:5678/webhook-test/customer-contact",
+        "url": "http://localhost:5678/webhook-test/customer-contact/message",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "{\n  \"customer\": {\n    \"name\": \"Max Mustermann\",\n    \"email\": \"max@example.com\"\n  },\n  \"subject\": \"Lieferung verspätet\",\n  \"message\": \"Meine Bestellung ist noch nicht angekommen. Ich warte seit 10 Tagen und möchte heute noch einen Rückruf.\"\n}",
@@ -52,7 +52,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=You analyze incoming messages.\n\nInput:\nSubject: {{$json.subject}}\nText: {{$json.raw_text}}\n\nReturn ONLY valid JSON. No markdown, no explanation.\nJSON schema:\n{\n  \"summary\": \"2 to 3 sentence summary\",\n  \"sentiment\": \"good|neutral|bad\",\n  \"open_todo\": \"boolean wether there is an open todo\"\n}\n\nRules:\n- Be concise and factual.\n- Do not invent details.\n- sentiment must be exactly one of: good, neutral, bad.\n- open_todo must be a boolean.",
+        "text": "=Du analysierst eingehende Nachrichten von Kunden.\n\nEingabe:\nBetreff: {{$json.subject}}\nText: {{$json.raw_text}}\n\nGib NUR gültiges JSON zurück. Kein Markdown, keine Erklärung.\n\nJSON-Schema:\n{\n\"summary\": \"2 bis 3 Sätze detaillierte, inhaltlich vollständige Zusammenfassung\",\n\"sentiment\": \"good|neutral|bad\",\n\"open_todo\": \"boolean, ob es ein offenes To-do gibt\"\n}\n\nRegeln:\n\n- Die Zusammenfassung muss alle wichtigen Informationen, Kontexte und ggf. Handlungsaufforderungen enthalten.\n- Nenne relevante Details (z. B. Termine, Probleme, Entscheidungen), ohne auszuschweifen.\n- Sei präzise und sachlich.\n- Erfinde keine Details.\n- sentiment muss genau eines sein: good, neutral, bad.\n- open_todo muss ein Boolean sein.\n",
         "batching": {}
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
@@ -141,7 +141,7 @@
           ]
         },
         "options": {
-          "createIfNotExists": true
+          "createIfNotExists": false
         }
       },
       "type": "n8n-nodes-base.dataTable",
@@ -362,6 +362,22 @@
       "id": "0f205228-8d1a-435e-8d71-0c7537165abc",
       "name": "Emergency Notification",
       "webhookId": "416d9b91-d3f2-4426-989f-53d5c6ef3ec8"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "customer-contact/audio",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -16,
+        640
+      ],
+      "id": "3d3d3de3-6075-44ca-8bf9-9fa1a8c35654",
+      "name": "Webhook Audio Upload",
+      "webhookId": "d3680ff1-15c7-417b-b379-33ac90b1bdbb"
     }
   ],
   "pinData": {},
@@ -477,13 +493,7 @@
     },
     "If critical": {
       "main": [
-        [
-          {
-            "node": "Emergency Notification",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     }
   },
@@ -492,7 +502,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "9dd0cf5e-b925-4540-a3fc-6ac35e6fba31",
+  "versionId": "bc7c8f83-071a-4a18-9892-1d5edd6c6216",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b0b3c0461964838e0d3fd08e97cc797827cdf6496952885d8860b1289ab8b4f1"
