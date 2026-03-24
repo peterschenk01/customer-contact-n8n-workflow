@@ -64,10 +64,18 @@ services:
       - ollama_storage:/root/.ollama
     restart: always
 
-  frontend:
+  webapp:
     build:
-      context: ./frontend
-    container_name: frontend
+      context: ./webapp
+    container_name: webapp
     ports:
       - "8000:8000"
+    restart: always
+
+  whisperx-api:
+    build:
+      context: ./whisperx-api
+    container_name: whisperx-api
+    ports:
+      - "8001:8000"
     restart: always
