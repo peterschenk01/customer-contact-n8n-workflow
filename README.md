@@ -4,6 +4,8 @@ A centralized `n8n` workflow for processing customer interactions from multiple 
 
 > The assignment and explanation (in German) can be found in the [assignment](./assignment/) folder.
 
+> The exported `n8n` workflow can be found in the [n8n](./n8n/) folder.
+
 ## Features
 
 - Accepts customer input from:
